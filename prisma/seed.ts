@@ -23,6 +23,7 @@ async function main() {
   await db.refund.deleteMany();
   await db.kycNote.deleteMany();
   await db.kycCase.deleteMany();
+  await db.accessRequest.deleteMany();
   await db.user.deleteMany();
 
   const mk = (name: string, email: string, role: string) => db.user.create({ data: { name, email, role } });
@@ -116,6 +117,75 @@ async function main() {
   }
   const kycCounts = await db.kycCase.groupBy({ by: ["status"], _count: true });
   console.log("Seeded 30 KYC cases:", kycCounts.map((c) => `${c.status}=${c._count}`).join(", "));
+
+  // Production access: 20 requests. "expired" is an approved grant whose expiresAt has passed.
+  const SYSTEMS = ["payments-db", "kyc-db", "admin-console"];
+  const DURATIONS = [1, 4, 24];
+  const ACCESS_PLAN = [
+    ...Array(5).fill("active"),
+    ...Array(5).fill("pending"),
+    ...Array(4).fill("expired"),
+    ...Array(3).fill("denied"),
+    ...Array(3).fill("revoked"),
+  ];
+  const ACCESS_REASONS = [
+    "Investigate failed settlement batch (INC-4821)",
+    "Backfill missing KYC flags for test cohort",
+    "Rotate config for fake merchant M-0042",
+    "Debug slow query reported in TICKET-9001",
+    "Verify migration on staging-like replica",
+  ];
+  const HOUR = 3600 * 1000;
+  for (let i = 0; i < ACCESS_PLAN.length; i++) {
+    const plan = ACCESS_PLAN[i];
+    const durationHours = DURATIONS[i % 3];
+    const requester = pick([agent, agent2, admin]);
+    const decidedAt =
+      plan === "active" ? new Date(now - 10 * 60 * 1000)
+      : plan === "expired" ? new Date(now - (durationHours + 2 + i) * HOUR)
+      : plan === "pending" ? null
+      : new Date(now - (i + 1) * HOUR);
+    const createdAt = new Date((decidedAt?.getTime() ?? now) - (15 + i) * 60 * 1000);
+    const approved = plan === "active" || plan === "expired" || plan === "revoked";
+    const status = plan === "pending" ? "pending" : plan === "denied" ? "denied" : plan === "revoked" ? "revoked" : "approved";
+    const request = await db.accessRequest.create({
+      data: {
+        requesterId: requester.id,
+        system: SYSTEMS[i % 3],
+        reason: pick(ACCESS_REASONS),
+        durationHours,
+        status,
+        createdAt,
+        ...(decidedAt && {
+          decidedById: approver.id,
+          decisionReason: approved ? "Linked ticket checks out" : "No linked incident or ticket",
+          decidedAt,
+          expiresAt: approved ? new Date(decidedAt.getTime() + durationHours * HOUR) : null,
+        }),
+        ...(plan === "revoked" && {
+          revokedById: approver.id,
+          revokeReason: "Work finished early",
+          revokedAt: new Date(decidedAt!.getTime() + 5 * 60 * 1000),
+        }),
+      },
+    });
+    const approval = await db.approval.create({
+      data: {
+        resourceType: "access_request",
+        resourceId: request.id,
+        requestedById: requester.id,
+        createdAt,
+        ...(decidedAt && {
+          decidedById: approver.id,
+          decision: approved ? "approved" : "rejected",
+          reason: approved ? "Linked ticket checks out" : "No linked incident or ticket",
+          decidedAt,
+        }),
+      },
+    });
+    await db.accessRequest.update({ where: { id: request.id }, data: { approvalId: approval.id } });
+  }
+  console.log("Seeded 20 access requests: active=5, pending=5, expired=4, denied=3, revoked=3");
 }
 
 main()

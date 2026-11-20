@@ -13,5 +13,6 @@ beforeEach(async () => {
   await db.refund.deleteMany();
   await db.kycNote.deleteMany();
   await db.kycCase.deleteMany();
+  await db.accessRequest.deleteMany();
   await db.user.deleteMany();
 });
