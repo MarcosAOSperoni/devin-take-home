@@ -157,6 +157,24 @@ Screenshots from a browser test of the seeded KYC app as each role, in [`docs/te
 | `approver-ssn-revealed`, `reveal-audit-redacted-after-reload` | Approver reveals one SSN; the audit row records `{"revealedField":"ssn"}` and no SSN |
 | `reveal-audit-immediate` | After the fix, the reveal audit row appears right away and the SSN stays visible |
 
+### Production access requests
+
+Screenshots from a browser test of the seeded access app as each role, in [`docs/test-evidence/access/`](docs/test-evidence/access/). All data is fake.
+
+| Screenshot | Shows |
+|---|---|
+| `viewer-list-active-first`, `viewer-active-no-actions`, `viewer-new-direct-url-403` | Viewers see the list (active grants first) but no request or action controls; `/access/new` returns 403 |
+| `viewer-stale-revoke-server-rejected`, `viewer-revoke-denied-audit-active-unchanged` | A forged viewer revoke is rejected on the server and audited; the grant stays active |
+| `agent-request-pending-audit` | Agent requests access; the request is pending with an audit row |
+| `approver-empty-approve-blocked`, `approver-empty-deny-blocked` | Approve and deny need a reason |
+| `approver-approved-active-audit`, `approver-denied-with-reason-final-audit` | Approval grants access with an expiry; denial keeps its reason and is final |
+| `agent-other-active-no-revoke`, `agent-other-revoke-rejected-stale-form`, `agent-other-revoke-denied-audit-after-reload` | An agent can't revoke another user's grant (before the fix, the denied row appeared only after reload) |
+| `agent-empty-revoke-blocked`, `agent-own-revoked-final-with-reason`, `agent-own-revoke-full-audit-history` | An agent revokes their own grant with a reason; full request, approval and revoke audit trail |
+| `agent-other-revoke-denied-audit-immediate` | After the fix, the denied revoke row appears right away |
+| `admin-own-approve-and-deny-blocked-stale-form`, `admin-own-decision-denied-audit-still-pending` | An admin can't approve or deny their own request |
+| `approver-expired-final-no-actions`, `approver-revoked-final-no-actions` | Expired and revoked grants have no action forms |
+| `filter-*`, `agent-mine-filter`, `agent-active-system-mine-combined-filter` | Status filters (including expired), system filters, Mine, and combined |
+
 ## Known limitations
 
 - **Mock auth**: no passwords, unsigned cookie with a raw user id, no CSRF beyond Next.js server-action defaults.

@@ -12,14 +12,16 @@ function str(form: FormData, key: string): string {
   return typeof v === "string" ? v : "";
 }
 
+// Revalidate even on failure: a denied attempt still writes an audit row shown on the detail page.
 async function run(write: () => Promise<unknown>): Promise<FormState> {
   try {
     await write();
+    return {};
   } catch (error) {
     return { error: userFacingMessage(error) };
+  } finally {
+    revalidatePath("/access", "layout");
   }
-  revalidatePath("/access", "layout");
-  return {};
 }
 
 export async function requestAccessForm(_prev: FormState, form: FormData): Promise<FormState> {
