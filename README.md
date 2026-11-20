@@ -141,6 +141,22 @@ The refund list's amount range is inclusive: $500.00–$500.01 returns both boun
 ![Invalid amount rejected](docs/test-evidence/invalid-amount-rejected.png)
 A malformed amount (`125,50`) is rejected with an error and no refund is created.
 
+### KYC review queue
+
+Screenshots from a browser test of the seeded KYC app as each role, in [`docs/test-evidence/kyc/`](docs/test-evidence/kyc/). All data is fake. The HTML, RSC and server-action responses for the queue and case pages contained no unmasked seeded SSN or DOB, apart from the single reveal response.
+
+| Screenshot | Shows |
+|---|---|
+| `viewer-home-kyc-hidden`, `viewer-queue-forbidden`, `viewer-case-forbidden` | Viewers don't see the app; `/kyc` and `/kyc/[id]` return 403 |
+| `agent-queue-status-risk-filters`, `agent-assigned-to-me-filter` | Queue with masked SSNs; status, risk and assigned-to-me filters |
+| `agent-assigned-note-added` | Agent assigns a pending case to themselves and adds a note |
+| `agent-empty-escalation-blocked`, `agent-escalated-no-decide-or-reveal` | Escalation needs a reason; agents get no approve, reject or reveal controls |
+| `approver-empty-approve-blocked`, `approver-empty-reject-blocked`, `approver-rejected-with-reason` | Approve and reject need a reason |
+| `approver-approved-final-locked`, `approver-seeded-*-final-locked`, `agent-*-final-locked` | Approved and rejected cases have no action or note forms |
+| `admin-self-decision-denied`, `admin-escalator-decision-denied` | An admin can't decide a case they were assigned to or escalated |
+| `approver-ssn-revealed`, `reveal-audit-redacted-after-reload` | Approver reveals one SSN; the audit row records `{"revealedField":"ssn"}` and no SSN |
+| `reveal-audit-immediate` | After the fix, the reveal audit row appears right away and the SSN stays visible |
+
 ## Known limitations
 
 - **Mock auth**: no passwords, unsigned cookie with a raw user id, no CSRF beyond Next.js server-action defaults.

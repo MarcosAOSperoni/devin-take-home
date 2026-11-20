@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { link } from "@/platform/ui/styles";
 import { revealSsnAction } from "../server-actions";
@@ -8,12 +9,14 @@ export function RevealSsn({ caseId, masked }: { caseId: string; masked: string }
   const [ssn, setSsn] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   function reveal() {
     startTransition(async () => {
       const res = await revealSsnAction(caseId);
       setError(res.error ?? null);
       setSsn(res.ssn ?? null);
+      router.refresh();
     });
   }
 
