@@ -58,6 +58,18 @@ describe("refunds: permissions", () => {
     expect((await db.refund.findUniqueOrThrow({ where: { id: refund.id } })).status).toBe("pending_approval");
   });
 
+  it("a viewer's denied decide records the target refundId on the denied audit row", async () => {
+    const { refund, approval } = await pendingRefund();
+    const viewer = await createUser("viewer");
+    actAs(viewer);
+    await expect(
+      decideRefund({ refundId: refund.id, approvalId: approval.id, decision: "approved" }),
+    ).rejects.toBeInstanceOf(ForbiddenError);
+    const denied = await db.auditEvent.findMany({ where: { actorId: viewer.id } });
+    expect(denied).toHaveLength(1);
+    expect(denied[0]).toMatchObject({ action: "refunds.decide", outcome: "denied", resourceType: "refund", resourceId: refund.id });
+  });
+
   it("admin cannot approve a refund they requested themselves", async () => {
     const admin = await createUser("admin");
     actAs(admin);

@@ -35,6 +35,8 @@ export type ActionDefinition<S extends z.ZodType, T> = {
   input: S;
   /** Field names stored as "[redacted]" in audit before/after JSON. */
   sensitive?: readonly string[];
+  /** Raw-input key holding the target resource id. Read unvalidated, only to label denied audit rows. */
+  resourceIdKey?: string;
   run: (ctx: ActionContext, input: z.infer<S>) => Promise<ActionResult<T>>;
 };
 
@@ -57,12 +59,18 @@ export function defineAction<S extends z.ZodType, T>(def: ActionDefinition<S, T>
     });
   }
 
+  function rawResourceId(rawInput: unknown): string | undefined {
+    if (!def.resourceIdKey || typeof rawInput !== "object" || rawInput === null) return undefined;
+    const value = (rawInput as Record<string, unknown>)[def.resourceIdKey];
+    return typeof value === "string" && value.length > 0 && value.length <= 200 ? value : undefined;
+  }
+
   return async function action(rawInput: unknown): Promise<T> {
     const user = await getCurrentUser();
     if (!user) throw new UnauthenticatedError();
 
     if (!can(user, def.permission)) {
-      await recordDenied(user);
+      await recordDenied(user, rawResourceId(rawInput));
       throw new ForbiddenError();
     }
 
@@ -98,7 +106,7 @@ export function defineAction<S extends z.ZodType, T>(def: ActionDefinition<S, T>
         return out.result;
       });
     } catch (error) {
-      if (error instanceof ForbiddenError) await recordDenied(user, error.resourceId);
+      if (error instanceof ForbiddenError) await recordDenied(user, error.resourceId ?? rawResourceId(rawInput));
       throw error;
     }
   };

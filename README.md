@@ -71,7 +71,8 @@ Calling the returned function does, in order:
 
 1. **Authenticate**: `getCurrentUser()`; none → `UnauthenticatedError` (nothing written).
 2. **Authorize**: `can(user, permission)`; no → write an AuditEvent with outcome `denied` (outside any
-   transaction), throw `ForbiddenError`.
+   transaction), throw `ForbiddenError`. If the action sets `resourceIdKey` (e.g. `refundId`), the denied row
+   records that id read from the raw input; it is used only as an audit label.
 3. **Validate**: zod `safeParse`; invalid → `ValidationError` (nothing written).
 4. **Run** inside one `db.$transaction`: `run(ctx, input)` makes its changes with `ctx.tx`, then
    `defineAction` writes the success AuditEvent (actor, action name, resource type/id, redacted before/after

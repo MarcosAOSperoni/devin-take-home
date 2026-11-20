@@ -32,6 +32,7 @@ export const decideRefund = defineAction({
   resourceType: RESOURCE,
   input: decideRefundInput,
   sensitive: SENSITIVE,
+  resourceIdKey: "refundId",
   async run(ctx, input) {
     const before = await ctx.tx.refund.findUnique({ where: { id: input.refundId } });
     if (!before) throw new NotFoundError("Refund not found");
