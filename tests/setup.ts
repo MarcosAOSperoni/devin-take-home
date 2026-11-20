@@ -11,5 +11,7 @@ beforeEach(async () => {
   await db.auditEvent.deleteMany();
   await db.approval.deleteMany();
   await db.refund.deleteMany();
+  await db.kycNote.deleteMany();
+  await db.kycCase.deleteMany();
   await db.user.deleteMany();
 });

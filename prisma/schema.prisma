@@ -15,7 +15,9 @@ model User {
   role      String
   createdAt DateTime @default(now())
 
-  refunds Refund[]
+  refunds     Refund[]
+  kycAssigned KycCase[] @relation("KycAssignee")
+  kycNotes    KycNote[]
 }
 
 // status: approved | pending_approval | rejected
@@ -32,6 +34,47 @@ model Refund {
   requestedBy User @relation(fields: [requestedById], references: [id])
 
   @@index([status])
+}
+
+// status: pending | in_review | escalated | approved | rejected (approved/rejected are final)
+// riskLevel: low | medium | high. ssn and dateOfBirth (YYYY-MM-DD) are PII: mask in loaders.
+model KycCase {
+  id               String   @id @default(cuid())
+  reference        String   @unique
+  customerName     String
+  dateOfBirth      String
+  country          String
+  documentType     String
+  riskLevel        String
+  ssn              String
+  status           String
+  assigneeId       String?
+  escalatedById    String?
+  escalationReason String?
+  decidedById      String?
+  decisionReason   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  assignee User?     @relation("KycAssignee", fields: [assigneeId], references: [id])
+  notes    KycNote[]
+
+  @@index([status])
+  @@index([riskLevel])
+  @@index([assigneeId])
+}
+
+model KycNote {
+  id        String   @id @default(cuid())
+  caseId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  case   KycCase @relation(fields: [caseId], references: [id])
+  author User    @relation(fields: [authorId], references: [id])
+
+  @@index([caseId])
 }
 
 // decision: approved | rejected
