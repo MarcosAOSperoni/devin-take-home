@@ -4,9 +4,9 @@ export function formatCents(cents: number): string {
 
 /** "12.34" -> 1234. Returns null for anything that isn't a positive amount with at most 2 decimals. */
 export function parseDollarsToCents(value: string): number | null {
-  const trimmed = value.trim().replace(/^\$/, "").replace(/,/g, "");
-  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return null;
-  const [whole, frac = ""] = trimmed.split(".");
+  const trimmed = value.trim().replace(/^\$/, "");
+  if (!/^(\d{1,3}(,\d{3})+|\d+)(\.\d{1,2})?$/.test(trimmed)) return null;
+  const [whole, frac = ""] = trimmed.replace(/,/g, "").split(".");
   return Number(whole) * 100 + Number(frac.padEnd(2, "0"));
 }
 
