@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// role: viewer | agent | approver | admin
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      String
+  createdAt DateTime @default(now())
+
+  refunds Refund[]
+}
+
+// status: approved | pending_approval | rejected
+model Refund {
+  id            String   @id @default(cuid())
+  orderId       String
+  customerName  String
+  amountCents   Int
+  reason        String
+  status        String
+  requestedById String
+  createdAt     DateTime @default(now())
+
+  requestedBy User @relation(fields: [requestedById], references: [id])
+
+  @@index([status])
+}
+
+// decision: approved | rejected
+model Approval {
+  id            String    @id @default(cuid())
+  resourceType  String
+  resourceId    String
+  requestedById String
+  decidedById   String?
+  decision      String?
+  reason        String?
+  createdAt     DateTime  @default(now())
+  decidedAt     DateTime?
+
+  @@index([resourceType, resourceId])
+}
+
+// Append-only. outcome: success | denied. before/after are redacted JSON strings.
+model AuditEvent {
+  id           String   @id @default(cuid())
+  actorId      String?
+  actorName    String?
+  action       String
+  resourceType String
+  resourceId   String?
+  before       String?
+  after        String?
+  outcome      String
+  createdAt    DateTime @default(now())
+
+  @@index([resourceType, resourceId])
+  @@index([actorId])
+}
