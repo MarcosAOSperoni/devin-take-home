@@ -3,6 +3,8 @@
 A ~1 hour prototype to evaluate building internal tools in code instead of Microsoft Power Apps.
 **This is not production software.** Auth is a demo mock that is insecure by design.
 
+**Walkthrough video (under 5 min):** https://www.loom.com/share/d8980ad5868944289e3fcbc60dd02350
+
 Stack: Next.js 16 (App Router), TypeScript (strict), Prisma 6 + SQLite, zod, Vitest, Tailwind.
 
 ## Run it
