@@ -21,6 +21,8 @@ async function main() {
   await db.auditEvent.deleteMany();
   await db.approval.deleteMany();
   await db.refund.deleteMany();
+  await db.kycNote.deleteMany();
+  await db.kycCase.deleteMany();
   await db.user.deleteMany();
 
   const mk = (name: string, email: string, role: string) => db.user.create({ data: { name, email, role } });
@@ -75,6 +77,45 @@ async function main() {
 
   const counts = await db.refund.groupBy({ by: ["status"], _count: true });
   console.log("Seeded 5 users and 50 refunds:", counts.map((c) => `${c.status}=${c._count}`).join(", "));
+
+  // KYC: 30 cases. i % 5 and i % 3 cover every status x risk combination twice.
+  const KYC_STATUSES = ["pending", "in_review", "escalated", "approved", "rejected"];
+  const RISKS = ["low", "medium", "high"];
+  const COUNTRIES = ["US", "CA", "GB", "DE", "BR", "MX", "IN", "JP"];
+  const DOCS = ["passport", "drivers_license", "national_id"];
+  const pad = (n: number, w: number) => String(n).padStart(w, "0");
+  for (let i = 0; i < 30; i++) {
+    const status = KYC_STATUSES[i % 5];
+    const assignee = status === "pending" ? null : pick([agent, agent2]);
+    const createdAt = new Date(now - Math.floor(rand() * 14 * 24 * 3600 * 1000));
+    const kycCase = await db.kycCase.create({
+      data: {
+        reference: `KYC-${1001 + i}`,
+        customerName: `${pick(FIRST)} ${pick(LAST)}`,
+        dateOfBirth: `${1950 + Math.floor(rand() * 55)}-${pad(1 + Math.floor(rand() * 12), 2)}-${pad(1 + Math.floor(rand() * 28), 2)}`,
+        country: pick(COUNTRIES),
+        documentType: pick(DOCS),
+        riskLevel: RISKS[i % 3],
+        // Fake SSNs only: 9xx area numbers are never issued.
+        ssn: `9${pad(i, 2)}-${pad(10 + Math.floor(rand() * 90), 2)}-${pad(Math.floor(rand() * 10000), 4)}`,
+        status,
+        assigneeId: assignee?.id ?? null,
+        escalatedById: status === "escalated" ? assignee?.id : null,
+        escalationReason: status === "escalated" ? "Document photo does not match selfie" : null,
+        decidedById: status === "approved" || status === "rejected" ? approver.id : null,
+        decisionReason:
+          status === "approved" ? "Documents verified" : status === "rejected" ? "Document appears altered" : null,
+        createdAt,
+      },
+    });
+    if (assignee) {
+      await db.kycNote.create({
+        data: { caseId: kycCase.id, authorId: assignee.id, body: "Checked document expiry and address.", createdAt },
+      });
+    }
+  }
+  const kycCounts = await db.kycCase.groupBy({ by: ["status"], _count: true });
+  console.log("Seeded 30 KYC cases:", kycCounts.map((c) => `${c.status}=${c._count}`).join(", "));
 }
 
 main()
