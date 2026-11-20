@@ -119,6 +119,28 @@ same kind of conditional update.
 9. **Tests**: for every action, a role without the permission is rejected and the denial is audited
    (see `apps/refunds/refunds.test.ts`); loaders reject roles without read permission (`tests/reads.test.ts`).
 
+## Test evidence
+
+Screenshots from a manual browser test of the seeded app (commit `4c36705`). All data is fake.
+
+![Approved refund with audit history](docs/test-evidence/refund-approved-audit-history-redacted.png)
+A $500.01 refund went to `pending_approval` and was approved by a second person; audit JSON shows `customerName` as `[redacted]`.
+
+![Rejected refund with reason](docs/test-evidence/refund-rejected-with-reason.png)
+Rejection stores its reason, and the refund status and audit history update to match.
+
+![Self-approval denied](docs/test-evidence/self-approval-denied-still-pending.png)
+An admin's attempt to approve their own refund is denied by the server, audited as `denied`, and the refund stays pending.
+
+![Audit log filters](docs/test-evidence/audit-log-filtered-by-resource-and-actor.png)
+`/admin/audit` filters by resource type and actor.
+
+![Amount range filter](docs/test-evidence/refund-list-amount-boundary-filter.png)
+The refund list's amount range is inclusive: $500.00–$500.01 returns both boundary refunds. The $500.00 one was approved immediately, and the $500.01 one after approval.
+
+![Invalid amount rejected](docs/test-evidence/invalid-amount-rejected.png)
+A malformed amount (`125,50`) is rejected with an error and no refund is created.
+
 ## Known limitations
 
 - **Mock auth**: no passwords, unsigned cookie with a raw user id, no CSRF beyond Next.js server-action defaults.
