@@ -18,6 +18,7 @@ model User {
   refunds     Refund[]
   kycAssigned KycCase[] @relation("KycAssignee")
   kycNotes    KycNote[]
+  accessRequests AccessRequest[]
 }
 
 // status: approved | pending_approval | rejected
@@ -107,4 +108,30 @@ model AuditEvent {
 
   @@index([resourceType, resourceId])
   @@index([actorId])
+}
+
+// system: payments-db | kyc-db | admin-console. durationHours: 1 | 4 | 24.
+// status: pending | approved | denied | revoked (denied/revoked final). "expired" is never stored:
+// it is an approved request whose expiresAt <= now, computed on read.
+model AccessRequest {
+  id             String    @id @default(cuid())
+  requesterId    String
+  system         String
+  reason         String
+  durationHours  Int
+  status         String
+  approvalId     String?
+  decidedById    String?
+  decisionReason String?
+  decidedAt      DateTime?
+  expiresAt      DateTime?
+  revokedById    String?
+  revokeReason   String?
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  requester User @relation(fields: [requesterId], references: [id])
+
+  @@index([status])
+  @@index([requesterId])
 }

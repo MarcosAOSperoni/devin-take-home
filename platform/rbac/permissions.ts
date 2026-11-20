@@ -10,14 +10,18 @@ export const PERMISSIONS = [
   "kyc:work",
   "kyc:decide",
   "kyc:reveal_ssn",
+  "access:read",
+  "access:request",
+  "access:approve",
+  "access:revoke",
 ] as const;
 export type Permission = (typeof PERMISSIONS)[number];
 
 /** The single source of truth for who can do what. */
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
-  viewer: ["refunds:read"],
-  agent: ["refunds:read", "refunds:request", "kyc:read", "kyc:work"],
-  approver: ["refunds:read", "refunds:approve", "kyc:read", "kyc:decide", "kyc:reveal_ssn"],
+  viewer: ["refunds:read", "access:read"],
+  agent: ["refunds:read", "refunds:request", "kyc:read", "kyc:work", "access:read", "access:request", "access:revoke"],
+  approver: ["refunds:read", "refunds:approve", "kyc:read", "kyc:decide", "kyc:reveal_ssn", "access:read", "access:approve", "access:revoke"],
   admin: PERMISSIONS,
 };
 
