@@ -286,6 +286,8 @@ describe("kyc: notes and assign-to-me", () => {
     expect(audits).toHaveLength(1);
     expect(audits[0]).toMatchObject({ action: "kyc.assign", outcome: "success", actorId: agent.id, resourceId: c.id });
     expect(audits[0].after).not.toContain(SSN);
+    const saved = await db.kycCase.findUniqueOrThrow({ where: { id: c.id } });
+    expect(JSON.parse(audits[0].after!).updatedAt).toBe(saved.updatedAt.toISOString());
     expect((await loadQueue({ mine: true })).cases.map((x) => x.id)).toEqual([c.id]);
   });
 

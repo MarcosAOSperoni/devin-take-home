@@ -38,7 +38,7 @@ export const assignCaseToMe = defineAction({
       data,
     });
     if (count === 0) throw new ConflictError("Only an unassigned pending case can be assigned");
-    const after = { ...before, ...data };
+    const after = await ctx.tx.kycCase.findUniqueOrThrow({ where: { id: before.id } });
     return { resourceId: before.id, before, after, result: { id: before.id, status: after.status } };
   },
 });
@@ -80,7 +80,7 @@ export const escalateCase = defineAction({
       data,
     });
     if (count === 0) throw new ConflictError("Only a pending or in-review case can be escalated");
-    const after = { ...before, ...data };
+    const after = await ctx.tx.kycCase.findUniqueOrThrow({ where: { id: before.id } });
     return { resourceId: before.id, before, after, result: { id: before.id, status: after.status } };
   },
 });
@@ -104,7 +104,7 @@ export const decideCase = defineAction({
       data,
     });
     if (count === 0) throw new ConflictError("This case is final and cannot be changed");
-    const after = { ...before, ...data };
+    const after = await ctx.tx.kycCase.findUniqueOrThrow({ where: { id: before.id } });
     return { resourceId: before.id, before, after, result: { id: before.id, status: after.status } };
   },
 });
